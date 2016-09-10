@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import math
+import pickle
 class ChessPosition:
     '记录一方的棋子局势'
     chesstable = {'first_pawn_Red':0,  'second_pawn_Red':3,'third_pawn_Red':6,'forth_pawn_Red':9,'fifth_pawn_Red':12,
@@ -35,8 +36,8 @@ class ChessPosition:
         self.fifth_pawn_Red=[[3,8],1]
 
         self.King_Black = [[9-0,8-4],1]#位置 状态 是否被吃掉
-        self.Left_Guard_Black=[[9-0,8-3],1]
-        self.Right_Guard_Black = [[9-0,8-5],1]
+        self.Left_Guard_Black=[[9-0,8-3] , 1]
+        self.Right_Guard_Black = [[9-0,8-5] , 1]
         self.Left_minister_Black = [[9-0,8-2],1]
         self.Right_minister_Black =[[9-0,8-6],1]
         self.Left_knight_Black =[[9-0,8-1],1]
@@ -50,6 +51,12 @@ class ChessPosition:
         self.third_pawn_Black =[[9-3, 8-4],1]
         self.forth_pawn_Black =[[9-3, 8-6],1]
         self.fifth_pawn_Black=[[9-3, 8-8],1]
+        name = '千字文.txt'
+        with open(name,'r') as f:
+            chars = f.read()
+            print(f.close())
+        self.names = chars.replace('\n', '')
+        self.steps = []
 
     def Num2Mov(self,num):
         #将数值兑换为子力的移动
@@ -150,3 +157,118 @@ class ChessPosition:
         #将子力的移动换算为数字
         Num = self.chesstable(step[1]) + step[2]
         return Num
+
+    def Move(self,step):
+        #根据输入步法，移动子力
+        status = getattr(self,step[0]);
+        if "pawn_Red"  in step[0]:
+            status[0] = self.mov_pawn_Red(step[1],status[0])
+            setattr(self,step[0],status)
+        if "pawn_Black"  in step[0]:
+            status[0] = self.mov_pawn_Black(step[1],status[0])
+            setattr(self,step[0],status)
+        if "cannon"  in step[0]:
+            status[0] = self.mov_cannon(step[1],status[0])
+            setattr(self,step[0],status)
+        if "rook"  in step[0]:
+            status[0] = self.mov_rook(step[1],status[0])
+            setattr(self,step[0],status)
+        if "knight"  in step[0]:
+            status[0] = self.mov_knight(step[1],status[0])
+            setattr(self,step[0],status)
+        if "Guard"  in step[0]:
+            status[0] = self.mov_Guard(step[1],status[0])
+            setattr(self,step[0],status)
+        if "King"  in step[0]:
+            status[0] = self.mov_King(step[1],status[0])
+            setattr(self,step[0],status)
+
+
+
+    def mov_pawn_Red(self,data,pos):
+        #移动红兵
+        if data ==0 : # 左移
+            pos[1] = pos[1] - 1
+        elif data ==1 :# 前进
+            pos[0] = pos[0] + 1
+        elif data ==2 :# 右移
+            pos[1] = pos[1] + 1
+        self.check_pos(pos)
+        return pos
+
+    def mov_pawn_Black(self,data,pos):
+         #移动黑兵
+        if data ==0 : # 左移
+            pos[1] = pos[1] - 1
+        elif data ==1 :# 前进
+            pos[0] = pos[0] - 1
+        elif data ==2 :# 右移
+            pos[1] = pos[1] + 1
+        self.check_pos(pos)
+        return pos
+
+    def mov_cannon(self,data,pos):
+        if data< 9:
+            pos[0] = (pos[0] + data + 1)%10
+        else:
+            data = data - 9
+            pos[1] = (pos[1] + data + 1)%9
+        self.check_pos(pos)
+        return pos
+
+    def mov_rook(self,data,pos):
+        if data< 9:
+            pos[0] = (pos[0] + data + 1)%10
+        else:
+            data = data - 9
+            pos[1] = (pos[1] + data + 1)%9
+        self.check_pos(pos)
+        self.check_pos(pos)
+        return pos
+
+    def mov_knight(self,data,pos):
+        moves = [[2,1],[1,2],[-1,2],[-2,1],[-2,-1],[-1,-2],[1,-2],[2,-1],]
+        pos = pos + moves[data]
+        self.check_pos(pos)
+        return pos
+
+    def mov_minister(self,data,pos):
+        moves = [[2,2],[-2,2],[-2,-2],[2,-2],]
+        pos = pos + moves[data]
+        self.check_pos(pos)
+        return pos
+
+    def mov_Guard(self,data,pos):
+        moves = [[2,2],[-2,2],[-2,-2],[2,-2],]/2
+        pos = pos + moves[data]
+        self.check_pos(pos)
+        return pos
+
+    def mov_King(self,data,pos):
+        moves = [[1,0],[0,1],[-1,0],[0,-1],]
+        pos = pos + moves[data]
+        self.check_pos(pos)
+        return pos
+
+    def check_pos(self,pos):
+        #检测是否出现了吃子的行为
+        for key in self.chesstable.keys():
+            tempos = getattr(self,key)
+            if(pos==tempos[0]):#如果吃子
+                tempos = 0
+                setattr(self,key,tempos)
+                break
+
+    def addstep(self,step):
+        self.steps.extend(step)
+        self.Move(step)
+
+    def savedata(self):
+        filename = 'C'
+        for i in self.steps:
+           num =  self.Mov2Num(i)
+           filename += self.names[num]
+
+        with open(filename,'w') as f:
+            pickle.dump(self, f)
+            print(f.close())
